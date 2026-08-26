@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parabola ze tří bodů</title>
+<script>
+window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},chtml:{scale:1},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<link rel="stylesheet" href="style.css">
+<style>
+.site-switch{display:flex;width:max-content;max-width:100%;gap:6px;padding:6px;margin-bottom:18px;border-radius:14px;background:#e9edf2}
+.site-switch__item{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 18px;border-radius:10px;color:var(--muted);font-weight:850;text-decoration:none}
+.site-switch__item:hover{background:rgba(255,255,255,.55);color:var(--text)}
+.site-switch__item.active{background:#fff;color:var(--accent);box-shadow:0 1px 4px rgba(16,24,40,.08)}
+.site-switch__item:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+.point-card{border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:10px}.point-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}.point-name{font-weight:900;font-size:17px}.point-dot{width:11px;height:11px;border-radius:50%}.xy{display:grid;grid-template-columns:1fr 1fr;gap:9px}.field label{display:block;color:var(--muted);font-size:12px;font-weight:800;margin-bottom:5px}.field input{width:100%;min-height:42px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff}.field input:focus,select:focus{outline:3px solid var(--accent-soft);border-color:var(--accent)}
+.tri-message{display:none;margin-top:12px;padding:11px 12px;border-radius:12px;font-size:13px;line-height:1.45}.tri-message.show{display:block}.tri-message.error{background:#fef3f2;color:#b42318}.tri-message.warn{background:#fff7ed;color:#a15c00}
+.result-panel{padding:18px}.result-main{border:1px solid var(--line);border-radius:14px;background:#fbfcfe;padding:17px;text-align:center}.result-main .formula{font-size:clamp(23px,3vw,32px);font-family:"Cambria Math","STIX Two Math",Georgia,serif;margin-top:7px}.result-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}.metric{border:1px solid var(--line);border-radius:12px;padding:11px}.metric .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:900}.metric .v{font-size:17px;font-weight:850;margin-top:5px}
+.solution-panel{padding:18px}.solution-panel h2{margin:0 0 12px;font-size:20px}.tri-calc{border:1px solid var(--line);border-radius:13px;overflow:hidden;margin-bottom:10px;background:#fff}.tri-calc summary{list-style:none;padding:14px 15px;font-weight:900;cursor:pointer;display:flex;justify-content:space-between;gap:10px}.tri-calc summary::-webkit-details-marker{display:none}.tri-calc summary::after{content:"+";color:var(--accent);font-size:20px}.tri-calc[open] summary::after{content:"−"}.tri-body{border-top:1px solid var(--line);padding:14px}.tri-step{background:#f8fafc;border-radius:12px;padding:12px;margin-bottom:9px;line-height:1.48}.tri-step strong{color:var(--accent)}.tri-answer{background:var(--accent-soft);border-radius:12px;padding:13px;font-weight:800;margin-top:10px}.tri-body mjx-container[display="true"],.tri-answer mjx-container[display="true"]{margin:.55em 0!important;overflow-x:auto;overflow-y:hidden;max-width:100%}
+.other-forms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.form-box{border:1px solid var(--line);border-radius:12px;padding:12px}.form-box .name{font-size:11px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.05em}.form-box .eq{margin-top:7px;font-size:16px;overflow-wrap:anywhere}
+@media(max-width:700px){.result-grid,.other-forms,.xy{grid-template-columns:1fr}.site-switch{width:100%}.site-switch__item{flex:1}}
+</style>
+</head>
+<body>
+<div class="app" id="threePointApp">
+  <nav class="site-switch" aria-label="Režim aplikace">
+    <a class="site-switch__item" href="index.html">Grafy</a>
+    <a class="site-switch__item active" href="tri-body.html" aria-current="page">Tři body</a>
+  </nav>
+
+  <div class="hero">
+    <div>
+      <h1>Parabola ze tří bodů</h1>
+      <p>Zadej tři body. Aplikace sestaví soustavu pro <b>f(x)=ax²+bx+c</b>, hledá nejjednodušší cestu výpočtu a vše rozepíše krok po kroku v MathJaxu.</p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="resetBtn" type="button">Výchozí příklad</button>
+      <button class="btn primary" id="generateTop" type="button">🎲 Nový příklad</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <aside class="panel controls">
+      <h2 style="margin:0 0 12px;font-size:18px">Zadané body</h2>
+      <div class="point-card"><div class="point-head"><div class="point-name">A</div><span class="point-dot" style="background:#087a55"></span></div><div class="xy"><div class="field"><label for="x1">x₁</label><input id="x1" type="number" step="0.5" value="-2"></div><div class="field"><label for="y1">y₁</label><input id="y1" type="number" step="0.5" value="9"></div></div></div>
+      <div class="point-card"><div class="point-head"><div class="point-name">B</div><span class="point-dot" style="background:#c11574"></span></div><div class="xy"><div class="field"><label for="x2">x₂</label><input id="x2" type="number" step="0.5" value="0"></div><div class="field"><label for="y2">y₂</label><input id="y2" type="number" step="0.5" value="1"></div></div></div>
+      <div class="point-card"><div class="point-head"><div class="point-name">C</div><span class="point-dot" style="background:#d97706"></span></div><div class="xy"><div class="field"><label for="x3">x₃</label><input id="x3" type="number" step="0.5" value="3"></div><div class="field"><label for="y3">y₃</label><input id="y3" type="number" step="0.5" value="4"></div></div></div>
+      <div class="tri-message" id="message" aria-live="polite"></div>
+      <div class="generator">
+        <h3>Generátor</h3>
+        <label for="difficulty" class="eq-label">Obtížnost</label>
+        <select id="difficulty"><option value="easy">Lehká – celá čísla</option><option value="medium">Střední – i desetinná</option></select>
+        <button class="btn primary" id="generateBtn" type="button" style="width:100%;margin-top:10px">Vygenerovat tři body</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="panel result-panel">
+        <div class="result-main"><div class="eq-label">Hledaný předpis paraboly</div><div class="formula" id="mainFormula"></div></div>
+        <div class="result-grid"><div class="metric"><div class="k">Koeficient a</div><div class="v" id="coefA"></div></div><div class="metric"><div class="k">Koeficient b</div><div class="v" id="coefB"></div></div><div class="metric"><div class="k">Koeficient c</div><div class="v" id="coefC"></div></div></div>
+      </section>
+
+      <section class="panel graph-panel">
+        <div class="section-head"><h2>Graf</h2><div class="legend"><span><i class="dot" style="background:#087a55"></i>A</span><span><i class="dot" style="background:#c11574"></i>B</span><span><i class="dot" style="background:#d97706"></i>C</span></div></div>
+        <div class="graph-wrap"><svg id="graph" viewBox="0 0 900 560" role="img" aria-label="Parabola procházející třemi zadanými body"></svg></div>
+      </section>
+
+      <section class="panel solution-panel">
+        <div class="section-head"><h2>Výpočet krok po kroku</h2><span class="badge">Rozbal postup</span></div>
+        <div id="solutionHost"></div>
+        <h2 style="margin-top:20px">Další tvary výsledné funkce</h2>
+        <div class="other-forms"><div class="form-box"><div class="name">Obecný</div><div class="eq" id="generalForm"></div></div><div class="form-box"><div class="name">Vrcholový</div><div class="eq" id="vertexForm"></div></div><div class="form-box"><div class="name">Součinový</div><div class="eq" id="factoredForm"></div></div></div>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="tri-body.js"></script>
+</body>
+</html>
