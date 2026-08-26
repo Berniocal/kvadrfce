@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kvadratické nerovnice – graficky</title>
+
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['\\(', '\\)']],
+    displayMath: [['\\[', '\\]']]
+  },
+  chtml: { scale: 1 },
+  options: {
+    skipHtmlTags: ['script','noscript','style','textarea','pre','code']
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<link rel="stylesheet" href="style.css">
+
+<style>
+.site-switch{
+  display:flex;width:max-content;max-width:100%;gap:6px;padding:6px;
+  margin-bottom:18px;border-radius:14px;background:#e9edf2
+}
+.site-switch__item{
+  display:inline-flex;align-items:center;justify-content:center;min-height:42px;
+  padding:9px 18px;border-radius:10px;color:var(--muted);font-weight:850;
+  text-decoration:none
+}
+.site-switch__item:hover{background:rgba(255,255,255,.55);color:var(--text)}
+.site-switch__item.active{background:#fff;color:var(--accent);box-shadow:0 1px 4px rgba(16,24,40,.08)}
+.site-switch__item:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+
+.ineq-controls{padding:18px;position:sticky;top:12px}
+.side-card{border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:10px}
+.side-title{font-weight:900;margin-bottom:10px}
+.coef-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.coef-field label{display:block;color:var(--muted);font-size:12px;font-weight:800;margin-bottom:5px}
+.coef-field input{
+  width:100%;min-height:42px;border:1px solid var(--line);border-radius:10px;
+  padding:8px 9px;background:#fff;text-align:center
+}
+.coef-field input:focus, .ineq-select:focus{
+  outline:3px solid var(--accent-soft);border-color:var(--accent)
+}
+.operator-row{
+  display:grid;grid-template-columns:1fr;gap:7px;margin:10px 0
+}
+.ineq-select{
+  width:100%;min-height:44px;border:1px solid var(--line);border-radius:10px;
+  padding:8px 10px;background:#fff
+}
+.ineq-generator{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
+.ineq-generator-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+
+.ineq-result{padding:18px}
+.ineq-equation{
+  border:1px solid var(--line);border-radius:14px;background:#fbfcfe;
+  padding:15px;text-align:center;margin-bottom:10px
+}
+.ineq-equation .name{
+  font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+  font-weight:900
+}
+.ineq-equation .math{font-size:18px;min-height:42px}
+.ineq-equation.primary{background:var(--accent-soft);border-color:#d8d8ff}
+.solution-box{
+  border-radius:14px;padding:14px;background:#ecfdf3;color:#087a55;
+  text-align:center;font-weight:850
+}
+.solution-box mjx-container[display="true"]{margin:.35em 0!important}
+
+.ineq-message{
+  display:none;margin-top:10px;padding:11px 12px;border-radius:12px;
+  font-size:13px;line-height:1.45
+}
+.ineq-message.show{display:block}
+.ineq-message.error{background:#fef3f2;color:#b42318}
+.ineq-message.warn{background:#fff7ed;color:#a15c00}
+
+.ineq-graph-panel{padding:18px}
+.ineq-graph-wrap{
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff
+}
+#ineqGraph{display:block;width:100%;height:auto;aspect-ratio:16/10;min-height:430px}
+.graph-explain{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;
+  color:var(--muted);font-size:12px
+}
+.shade-key{display:inline-flex;align-items:center;gap:6px}
+.shade-sample{width:18px;height:10px;border-radius:3px;background:var(--accent-soft);border:1px solid #b8b8ff}
+
+.ineq-solution-panel{padding:18px}
+.ineq-calc{
+  border:1px solid var(--line);border-radius:13px;overflow:hidden;margin-bottom:10px;background:#fff
+}
+.ineq-calc summary{
+  list-style:none;padding:14px 15px;font-weight:900;cursor:pointer;
+  display:flex;justify-content:space-between;gap:10px
+}
+.ineq-calc summary::-webkit-details-marker{display:none}
+.ineq-calc summary::after{content:"+";color:var(--accent);font-size:20px}
+.ineq-calc[open] summary::after{content:"−"}
+.ineq-calc-body{border-top:1px solid var(--line);padding:14px}
+.ineq-step{background:#f8fafc;border-radius:12px;padding:12px;margin-bottom:9px;line-height:1.5}
+.ineq-step strong{color:var(--accent)}
+.ineq-answer{background:var(--accent-soft);border-radius:12px;padding:13px;font-weight:800;margin-top:10px}
+.ineq-step mjx-container[display="true"],.ineq-answer mjx-container[display="true"],
+.ineq-equation mjx-container[display="true"]{
+  margin:.55em 0!important;overflow-x:auto;overflow-y:hidden;max-width:100%
+}
+
+@media(max-width:700px){
+  .coef-grid,.ineq-generator-grid{grid-template-columns:1fr}
+  .site-switch{width:100%;flex-wrap:wrap}
+  .site-switch__item{flex:1;min-width:90px}
+  #ineqGraph{min-height:350px}
+}
+</style>
+</head>
+
+<body>
+<div class="app" id="ineqApp">
+  <nav class="site-switch" aria-label="Režim aplikace">
+    <a class="site-switch__item" href="index.html">Grafy</a>
+    <a class="site-switch__item" href="tri-body.html">Tři body</a>
+    <a class="site-switch__item active" href="nerovnice.html" aria-current="page">Nerovnice</a>
+  </nav>
+
+  <div class="hero">
+    <div>
+      <h1>Kvadratické nerovnice</h1>
+      <p>Zadej nerovnici na obou stranách. Nejprve ji upravíme na základní tvar, potom vyřešíme odpovídající kvadratickou rovnici a řešení přečteme z grafu.</p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="ineqReset" type="button">Výchozí příklad</button>
+      <button class="btn primary" id="ineqGenerateTop" type="button">🎲 Nový příklad</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <aside class="panel ineq-controls">
+      <div class="side-card">
+        <div class="side-title">Levá strana</div>
+        <div class="coef-grid">
+          <div class="coef-field">
+            <label for="la">u x²</label>
+            <input id="la" type="number" step="0.5" value="2">
+          </div>
+          <div class="coef-field">
+            <label for="lb">u x</label>
+            <input id="lb" type="number" step="0.5" value="-3">
+          </div>
+          <div class="coef-field">
+            <label for="lc">konstanta</label>
+            <input id="lc" type="number" step="0.5" value="-5">
+          </div>
+        </div>
+      </div>
+
+      <div class="operator-row">
+        <label class="eq-label" for="ineqOperator">Znaménko nerovnosti</label>
+        <select class="ineq-select" id="ineqOperator">
+          <option value=">">&gt;</option>
+          <option value=">=">≥</option>
+          <option value="<">&lt;</option>
+          <option value="<=">≤</option>
+        </select>
+      </div>
+
+      <div class="side-card">
+        <div class="side-title">Pravá strana</div>
+        <div class="coef-grid">
+          <div class="coef-field">
+            <label for="ra">u x²</label>
+            <input id="ra" type="number" step="0.5" value="1">
+          </div>
+          <div class="coef-field">
+            <label for="rb">u x</label>
+            <input id="rb" type="number" step="0.5" value="1">
+          </div>
+          <div class="coef-field">
+            <label for="rc">konstanta</label>
+            <input id="rc" type="number" step="0.5" value="-1">
+          </div>
+        </div>
+      </div>
+
+      <div id="ineqMessage" class="ineq-message" aria-live="polite"></div>
+
+      <div class="ineq-generator">
+        <h3 style="margin:0 0 10px;font-size:16px">Generátor</h3>
+        <div class="ineq-generator-grid">
+          <div>
+            <label class="eq-label" for="ineqDifficulty">Obtížnost</label>
+            <select class="ineq-select" id="ineqDifficulty">
+              <option value="easy">Lehká – celá čísla</option>
+              <option value="medium">Střední – i desetinná</option>
+            </select>
+          </div>
+          <div>
+            <label class="eq-label" for="ineqRootType">Průsečíky s osou x</label>
+            <select class="ineq-select" id="ineqRootType">
+              <option value="random">Náhodně</option>
+              <option value="two">2 průsečíky</option>
+              <option value="double">1 dotyk</option>
+              <option value="none">Žádný průsečík</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn primary" id="ineqGenerate" type="button" style="width:100%;margin-top:10px">Vygenerovat nerovnici</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="panel ineq-result">
+        <div class="ineq-equation">
+          <div class="name">Zadaná nerovnice</div>
+          <div class="math" id="originalIneq"></div>
+        </div>
+        <div class="ineq-equation primary">
+          <div class="name">Základní tvar</div>
+          <div class="math" id="basicIneq"></div>
+        </div>
+        <div class="solution-box" id="solutionBox"></div>
+      </section>
+
+      <section class="panel ineq-graph-panel">
+        <div class="section-head">
+          <h2>Grafické řešení</h2>
+          <span class="badge">vybarvené x = řešení</span>
+        </div>
+        <div class="ineq-graph-wrap">
+          <svg id="ineqGraph" viewBox="0 0 900 590" role="img" aria-label="Grafické řešení kvadratické nerovnice"></svg>
+        </div>
+        <div class="graph-explain">
+          <span class="shade-key"><i class="shade-sample"></i>vybarvené intervaly splňují nerovnici</span>
+          <span>Plný bod = krajní bod patří do řešení, prázdný bod = nepatří.</span>
+        </div>
+      </section>
+
+      <section class="panel ineq-solution-panel">
+        <div class="section-head">
+          <h2>Řešení krok po kroku</h2>
+          <span class="small-label">výchozím stavem sbalené</span>
+        </div>
+        <div id="ineqSteps"></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script src="nerovnice.js"></script>
+</body>
+</html>
