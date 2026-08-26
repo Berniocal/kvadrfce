@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kvadratická funkce – interaktivně</title>
+
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['\\(', '\\)']],
+    displayMath: [['\\[', '\\]']]
+  },
+  chtml: {
+    scale: 1
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+  }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app" id="quadApp">
+  <div class="hero">
+    <div>
+      <h1>Kvadratická funkce</h1>
+      <p>Přepínej mezi čtyřmi tvary téže funkce, měň koeficienty posuvníkem nebo přepisem a sleduj, jak se okamžitě mění graf i všechny vlastnosti.</p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="resetBtn" type="button">Výchozí funkce</button>
+      <button class="btn primary" id="randomBtnTop" type="button">🎲 Vygenerovat</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <aside class="panel controls">
+      <div class="tabs" role="tablist" aria-label="Tvar kvadratické funkce">
+        <button class="tab active" data-mode="general" type="button">Obecný</button>
+        <button class="tab" data-mode="vertex" type="button">Vrcholový</button>
+        <button class="tab" data-mode="factored" type="button">Součinový</button>
+        <button class="tab" data-mode="power" type="button">Mocninový</button>
+      </div>
+
+      <div class="equation-card">
+        <div class="eq-label" id="activeFormLabel">Obecný tvar</div>
+        <div class="equation" id="activeEquation">f(x) = x² − 4x + 3</div>
+      </div>
+
+      <div id="controlHost" class="controls-list"></div>
+      <div class="validation" id="validation" aria-live="polite"></div>
+      <div class="hint" id="modeHint"></div>
+
+      <div class="generator">
+        <h3>Generátor příkladů</h3>
+        <div class="generator-grid">
+          <div>
+            <label for="rootType" class="eq-label">Kořeny</label>
+            <select id="rootType">
+              <option value="random">Náhodně</option>
+              <option value="two">2 reálné kořeny</option>
+              <option value="double">1 dvojnásobný kořen / mocninový</option>
+              <option value="none">Žádný reálný kořen</option>
+            </select>
+          </div>
+          <div>
+            <label for="difficulty" class="eq-label">Obtížnost</label>
+            <select id="difficulty">
+              <option value="easy">Lehká – celá čísla</option>
+              <option value="medium">Střední – i desetinná</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn primary" id="randomBtn" type="button" style="width:100%;margin-top:10px">Vygenerovat funkci</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="panel graph-panel">
+        <div class="section-head">
+          <h2>Graf</h2>
+          <div class="legend">
+            <span><i class="dot" style="background:var(--vertex)"></i>vrchol</span>
+            <span><i class="dot" style="background:var(--root)"></i>kořeny</span>
+            <span><i class="dot" style="background:var(--intercept)"></i>průsečík s y</span>
+          </div>
+        </div>
+        <div class="graph-wrap">
+          <svg id="graph" viewBox="0 0 900 560" role="img" aria-label="Graf kvadratické funkce"></svg>
+        </div>
+        <div class="graph-tools">
+          <div class="graph-note" id="graphRangeNote">Zobrazení se automaticky přizpůsobuje funkci.</div>
+          <div class="zoom-buttons">
+            <button type="button" id="zoomOut" aria-label="Oddálit graf">−</button>
+            <button type="button" id="zoomReset" aria-label="Automatické měřítko">⟳</button>
+            <button type="button" id="zoomIn" aria-label="Přiblížit graf">+</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel forms-panel">
+        <div class="section-head"><h2>Čtyři tvary kvadratické funkce</h2></div>
+        <div class="forms-grid">
+          <div class="form-card" id="formGeneral">
+            <div class="form-name">Obecný tvar</div>
+            <div class="form-eq" id="eqGeneral"></div>
+            <div class="form-note">Nejlépe z něj vidíš koeficienty a, b, c a průsečík s osou y.</div>
+          </div>
+          <div class="form-card" id="formVertex">
+            <div class="form-name">Vrcholový tvar</div>
+            <div class="form-eq" id="eqVertex"></div>
+            <div class="form-note">Okamžitě ukáže vrchol a osu souměrnosti.</div>
+          </div>
+          <div class="form-card" id="formFactored">
+            <div class="form-name">Součinový tvar</div>
+            <div class="form-eq" id="eqFactored"></div>
+            <div class="form-note" id="factoredNote">Vždy se zapisuje jako součin dvou závorek a okamžitě ukáže reálné kořeny.</div>
+          </div>
+          <div class="form-card" id="formPower">
+            <div class="form-name">Mocninový tvar</div>
+            <div class="form-eq" id="eqPower"></div>
+            <div class="form-note" id="powerNote">Speciální případ f(x) = a(x + b)².</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel calc-panel">
+        <div class="section-head">
+          <h2>Výpočty a převody</h2>
+          <span class="badge">Rozbal postup</span>
+        </div>
+        <div class="calc-list" id="calculationsHost"></div>
+      </section>
+
+      <section class="panel properties">
+        <h2>Vlastnosti funkce</h2>
+        <div class="prop-grid" id="propertiesGrid"></div>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="app-1.js"></script>
+<script src="app-2.js"></script>
+<script src="app-3.js"></script>
+<script src="app-4.js"></script>
+<script src="app-5.js"></script>
+</body>
+</html>
