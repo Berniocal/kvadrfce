@@ -21,10 +21,22 @@ window.MathJax = {
 </script>
 <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 <link rel="stylesheet" href="style.css">
+<style>
+.site-switch{display:flex;width:max-content;max-width:100%;gap:6px;padding:6px;margin-bottom:18px;border-radius:14px;background:#e9edf2}
+.site-switch__item{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 18px;border-radius:10px;color:var(--muted);font-weight:850;text-decoration:none}
+.site-switch__item:hover{background:rgba(255,255,255,.55);color:var(--text)}
+.site-switch__item.active{background:#fff;color:var(--accent);box-shadow:0 1px 4px rgba(16,24,40,.08)}
+.site-switch__item:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+</style>
 </head>
 <body>
 
 <div class="app" id="quadApp">
+  <nav class="site-switch" aria-label="Režim aplikace">
+    <a class="site-switch__item active" href="index.html" aria-current="page">Grafy</a>
+    <a class="site-switch__item" href="tri-body.html">Tři body</a>
+  </nav>
+
   <div class="hero">
     <div>
       <h1>Kvadratická funkce</h1>
