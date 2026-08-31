@@ -45,6 +45,8 @@ window.MathJax = {
     </div>
     <div class="actions">
       <button class="btn" id="resetBtn" type="button">Výchozí funkce</button>
+      <!-- bernio-download-html -->
+      <button class="btn" id="downloadHtmlBtn" type="button" title="Stáhnout tuto část aplikace jako HTML">⬇️ Stáhnout HTML</button>
       <button class="btn primary" id="randomBtnTop" type="button">🎲 Vygenerovat</button>
     </div>
   </div>
@@ -160,5 +162,61 @@ window.MathJax = {
 <script src="app-3.js"></script>
 <script src="app-4.js"></script>
 <script src="app-5.js"></script>
+<script>
+async function downloadStandaloneHtml(){
+  const button=document.getElementById('downloadHtmlBtn');
+  const originalText=button.textContent;
+  button.disabled=true;
+  button.textContent='Připravuji HTML…';
+  try{
+    const clone=document.documentElement.cloneNode(true);
+
+    const cssLink=clone.querySelector('link[rel="stylesheet"][href="style.css"]');
+    if(cssLink){
+      const response=await fetch(new URL('style.css',location.href));
+      if(!response.ok) throw new Error('Nepodařilo se načíst style.css');
+      const style=document.createElement('style');
+      style.setAttribute('data-bundled-from','style.css');
+      style.textContent=await response.text();
+      cssLink.replaceWith(style);
+    }
+
+    const localScripts=[...clone.querySelectorAll('script[src]')].filter(script=>/^app-\d+\.js$/.test(script.getAttribute('src')||''));
+    for(const script of localScripts){
+      const src=script.getAttribute('src');
+      const response=await fetch(new URL(src,location.href));
+      if(!response.ok) throw new Error('Nepodařilo se načíst '+src);
+      const bundled=document.createElement('script');
+      bundled.setAttribute('data-bundled-from',src);
+      bundled.textContent=await response.text();
+      script.replaceWith(bundled);
+    }
+
+    clone.querySelectorAll('.site-switch__item').forEach(link=>{
+      const href=link.getAttribute('href');
+      if(href) link.setAttribute('href',new URL(href,location.href).href);
+    });
+
+    const html='<!DOCTYPE html>\n'+clone.outerHTML;
+    const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download='kvadraticke-funkce.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),0);
+  }catch(error){
+    console.error(error);
+    alert('HTML se nepodařilo připravit ke stažení.');
+  }finally{
+    button.disabled=false;
+    button.textContent=originalText;
+  }
+}
+
+document.getElementById('downloadHtmlBtn').addEventListener('click',downloadStandaloneHtml);
+</script>
 </body>
 </html>
