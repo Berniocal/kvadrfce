@@ -38,6 +38,8 @@ window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},cht
     </div>
     <div class="actions">
       <button class="btn" id="resetBtn" type="button">Výchozí příklad</button>
+      <!-- bernio-download-html -->
+      <button class="btn" id="downloadHtmlBtn" type="button" title="Stáhnout tuto část aplikace jako HTML">⬇️ Stáhnout HTML</button>
       <button class="btn primary" id="generateTop" type="button">🎲 Nový příklad</button>
     </div>
   </div>
@@ -78,5 +80,55 @@ window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},cht
   </div>
 </div>
 <script src="tri-body.js"></script>
+<script>
+async function downloadStandaloneHtml(){
+  const button=document.getElementById('downloadHtmlBtn');
+  const originalText=button.textContent;
+  button.disabled=true;
+  button.textContent='Připravuji HTML…';
+  try{
+    const clone=document.documentElement.cloneNode(true);
+    const cssLink=clone.querySelector('link[rel="stylesheet"][href="style.css"]');
+    if(cssLink){
+      const response=await fetch(new URL('style.css',location.href));
+      if(!response.ok) throw new Error('Nepodařilo se načíst style.css');
+      const style=document.createElement('style');
+      style.setAttribute('data-bundled-from','style.css');
+      style.textContent=await response.text();
+      cssLink.replaceWith(style);
+    }
+    const script=clone.querySelector('script[src="tri-body.js"]');
+    if(script){
+      const response=await fetch(new URL('tri-body.js',location.href));
+      if(!response.ok) throw new Error('Nepodařilo se načíst tri-body.js');
+      const bundled=document.createElement('script');
+      bundled.setAttribute('data-bundled-from','tri-body.js');
+      bundled.textContent=await response.text();
+      script.replaceWith(bundled);
+    }
+    clone.querySelectorAll('.site-switch__item').forEach(link=>{
+      const href=link.getAttribute('href');
+      if(href) link.setAttribute('href',new URL(href,location.href).href);
+    });
+    const html='<!DOCTYPE html>\n'+clone.outerHTML;
+    const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download='kvadraticka-funkce-tri-body.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),0);
+  }catch(error){
+    console.error(error);
+    alert('HTML se nepodařilo připravit ke stažení.');
+  }finally{
+    button.disabled=false;
+    button.textContent=originalText;
+  }
+}
+document.getElementById('downloadHtmlBtn').addEventListener('click',downloadStandaloneHtml);
+</script>
 </body>
 </html>
