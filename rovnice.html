@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kvadratické rovnice – graficky</title>
+<script>
+window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},chtml:{scale:1},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<link rel="stylesheet" href="style.css">
+<style>
+.site-switch{display:flex;width:max-content;max-width:100%;gap:6px;padding:6px;margin-bottom:18px;border-radius:14px;background:#e9edf2;overflow-x:auto}.site-switch__item{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 18px;border-radius:10px;color:var(--muted);font-weight:850;text-decoration:none;white-space:nowrap}.site-switch__item:hover{background:rgba(255,255,255,.55);color:var(--text)}.site-switch__item.active{background:#fff;color:var(--accent);box-shadow:0 1px 4px rgba(16,24,40,.08)}
+.eq-controls{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.eq-controls label{display:block;font-size:12px;color:var(--muted);font-weight:800;margin-bottom:5px}.eq-controls input{width:100%;min-height:42px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff}.solution-card{margin-top:12px;padding:14px;border-radius:12px;background:var(--accent-soft);text-align:center;font-weight:800}.method-note{margin:10px 0;padding:12px 14px;border-radius:11px;background:var(--accent-soft);line-height:1.55}.equation-graph{display:block;width:100%;height:auto;min-height:390px}.graph-legend{display:flex;gap:16px;flex-wrap:wrap;padding-top:10px;color:var(--muted);font-size:13px}.graph-legend span{display:flex;align-items:center;gap:6px}.graph-legend i{display:inline-block;width:11px;height:11px;border-radius:50%}@media(max-width:650px){.eq-controls{grid-template-columns:1fr}.equation-graph{min-height:300px}}
+</style>
+</head>
+<body>
+<div class="app" id="equationApp">
+  <nav class="site-switch" aria-label="Režim aplikace">
+    <a class="site-switch__item" href="index.html">Grafy</a>
+    <a class="site-switch__item" href="tri-body.html">Tři body</a>
+    <a class="site-switch__item active" href="rovnice.html" aria-current="page">Rovnice</a>
+    <a class="site-switch__item" href="nerovnice.html">Nerovnice</a>
+  </nav>
+
+  <div class="hero">
+    <div>
+      <h1>Kvadratické rovnice</h1>
+      <p>Rovnici upravíme tak, aby na jedné straně zůstalo x². Potom řešení hledáme jako průsečíky základní paraboly a přímky.</p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="resetBtn" type="button">Výchozí příklad</button>
+      <button class="btn primary" id="generateBtn" type="button">🎲 Nový příklad</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <aside class="panel controls">
+      <h2 style="margin-top:0">Rovnice</h2>
+      <div class="eq-controls">
+        <div><label for="qa">a</label><input id="qa" type="number" step="0.5" value="1"></div>
+        <div><label for="qb">b</label><input id="qb" type="number" step="0.5" value="2"></div>
+        <div><label for="qc">c</label><input id="qc" type="number" step="0.5" value="-3"></div>
+      </div>
+      <div class="equation-card" style="margin-top:14px">
+        <div class="eq-label">Zadaná rovnice</div>
+        <div class="equation" id="originalEquation"></div>
+      </div>
+      <div class="equation-card">
+        <div class="eq-label">Tvar vhodný pro grafické řešení</div>
+        <div class="equation" id="graphEquation"></div>
+      </div>
+      <div class="solution-card" id="solutionBox"></div>
+      <div class="validation" id="message"></div>
+    </aside>
+
+    <main class="content">
+      <section class="panel graph-panel">
+        <div class="section-head">
+          <h2>Grafické řešení</h2>
+        </div>
+        <div class="graph-wrap">
+          <svg id="equationGraph" class="equation-graph" viewBox="0 0 900 560" role="img" aria-label="Grafické řešení kvadratické rovnice"></svg>
+        </div>
+        <div class="graph-legend">
+          <span><i style="background:var(--curve)"></i>y = x²</span>
+          <span><i style="background:var(--intercept)"></i><span id="lineLegend"></span></span>
+          <span><i style="background:var(--root)"></i>průsečíky</span>
+        </div>
+      </section>
+
+      <section class="panel calc-panel">
+        <div class="section-head"><h2>Řešení krok po kroku</h2><span class="badge">Rozbal postup</span></div>
+        <div class="calc-list" id="stepsHost"></div>
+      </section>
+    </main>
+  </div>
+</div>
+<script>
+(()=>{
+const EPS=1e-9,$=id=>document.getElementById(id);
+const inputs=[$('qa'),$('qb'),$('qc')];
+let mathPromise=Promise.resolve(),mathFrame=0;
+function clean(n){if(Math.abs(n)<EPS)return 0;return Math.round(n*1e6)/1e6}
+function fmt(n){n=clean(n);const s=Number.isInteger(n)?String(n):String(Math.round(n*1000)/1000);return s.replace('-','−').replace('.',',')}
+function texNum(n){n=clean(n);const s=Number.isInteger(n)?String(n):String(Math.round(n*1000)/1000);return s.replace('.','{,}')}
+const md=t=>`\\[${t}\\]`,mi=t=>`\\(${t}\\)`;
+function term(k,v,first=false){k=clean(k);if(Math.abs(k)<EPS)return'';const neg=k<0,a=Math.abs(k),coef=v&&Math.abs(a-1)<EPS?'':texNum(a),body=coef+v;return first?(neg?'-':'')+body:(neg?' - ':' + ')+body}
+function poly(a,b,c){const arr=[[a,'x^2'],[b,'x'],[c,'']].filter(([k])=>Math.abs(k)>=EPS);return arr.length?arr.map(([k,v],i)=>term(k,v,i===0)).join(''):'0'}
+function linear(m,n){let out='';if(Math.abs(m)>=EPS)out=term(m,'x',true);if(Math.abs(n)>=EPS||!out)out+=term(n,'',!out);return out||'0'}
+function step(h){return `<div class="calc-step">${h}</div>`}
+function result(h){return `<div class="calc-result">${h}</div>`}
+function details(t,b){return `<details class="calc-item" open><summary>${t}</summary><div class="calc-body">${b}</div></details>`}
+function queueMath(){if(!window.MathJax?.typesetPromise)return;if(mathFrame)cancelAnimationFrame(mathFrame);mathFrame=requestAnimationFrame(()=>{mathFrame=0;const targets=[$('originalEquation'),$('graphEquation'),$('solutionBox'),$('stepsHost')];mathPromise=mathPromise.then(()=>{window.MathJax.typesetClear?.(targets);return window.MathJax.typesetPromise(targets)}).catch(()=>{})})}
+function read(){const a=+$('qa').value,b=+$('qb').value,c=+$('qc').value;if(![a,b,c].every(Number.isFinite))return null;return{a,b,c}}
+function roots(a,b,c){const D=clean(b*b-4*a*c);if(D>EPS){const s=Math.sqrt(D),x1=clean((-b-s)/(2*a)),x2=clean((-b+s)/(2*a));return{type:'two',roots:[Math.min(x1,x2),Math.max(x1,x2)]}}if(Math.abs(D)<=EPS)return{type:'double',roots:[clean(-b/(2*a))]};return{type:'none',roots:[]}}
+function nice(span){const raw=Math.max(span/9,.1),p=Math.pow(10,Math.floor(Math.log10(raw))),m=raw/p;return(m<1.5?1:m<3.5?2:m<7.5?5:10)*p}
+function draw(a,b,c){const B=clean(b/a),C=clean(c/a),m=clean(-B),n=clean(-C),rd=roots(a,b,c),center=clean(-B/2);let xMin=center-5,xMax=center+5;if(rd.type==='two'){xMin=Math.min(xMin,rd.roots[0]-2);xMax=Math.max(xMax,rd.roots[1]+2)}else if(rd.type==='double'){xMin=Math.min(xMin,rd.roots[0]-4);xMax=Math.max(xMax,rd.roots[0]+4)}xMin=Math.min(xMin,-3);xMax=Math.max(xMax,3);const ys=[0];for(let i=0;i<=180;i++){const x=xMin+(xMax-xMin)*i/180;ys.push(x*x,m*x+n)}let yMin=Math.min(...ys),yMax=Math.max(...ys),sp=yMax-yMin;if(sp<8){yMin-=4;yMax+=4}else{yMin-=sp*.08;yMax+=sp*.08}const W=900,H=560,L=52,R=30,T=30,Bot=44,sx=x=>L+(x-xMin)/(xMax-xMin)*(W-L-R),sy=y=>H-Bot-(y-yMin)/(yMax-yMin)*(H-T-Bot),xs=nice(xMax-xMin),ysStep=nice(yMax-yMin),parts=[`<rect width="${W}" height="${H}" fill="white"/>`];for(let x=Math.ceil(xMin/xs)*xs;x<=xMax+EPS;x+=xs){const px=sx(x);parts.push(`<line x1="${px}" y1="${T}" x2="${px}" y2="${H-Bot}" stroke="var(--grid)"/>`);const ly=(yMin<=0&&yMax>=0)?sy(0)+18:H-Bot+18;parts.push(`<text x="${px}" y="${ly}" text-anchor="middle" font-size="12" fill="var(--axis)">${fmt(x)}</text>`)}for(let y=Math.ceil(yMin/ysStep)*ysStep;y<=yMax+EPS;y+=ysStep){const py=sy(y);parts.push(`<line x1="${L}" y1="${py}" x2="${W-R}" y2="${py}" stroke="var(--grid)"/>`);const lx=(xMin<=0&&xMax>=0)?sx(0)-10:L-8;parts.push(`<text x="${lx}" y="${py+4}" text-anchor="end" font-size="12" fill="var(--axis)">${fmt(y)}</text>`)}if(xMin<=0&&xMax>=0)parts.push(`<line x1="${sx(0)}" y1="${T}" x2="${sx(0)}" y2="${H-Bot}" stroke="var(--axis)" stroke-width="1.8"/>`);if(yMin<=0&&yMax>=0)parts.push(`<line x1="${L}" y1="${sy(0)}" x2="${W-R}" y2="${sy(0)}" stroke="var(--axis)" stroke-width="1.8"/>`);let p='';for(let i=0;i<=450;i++){const x=xMin+(xMax-xMin)*i/450;p+=(p?' L ':'M ')+sx(x).toFixed(2)+' '+sy(x*x).toFixed(2)}parts.push(`<path d="${p}" fill="none" stroke="var(--curve)" stroke-width="4" stroke-linecap="round"/>`);parts.push(`<line x1="${sx(xMin)}" y1="${sy(m*xMin+n)}" x2="${sx(xMax)}" y2="${sy(m*xMax+n)}" stroke="var(--intercept)" stroke-width="3.5"/>`);rd.roots.forEach((x,i)=>{const y=x*x,px=sx(x),py=sy(y),lab=rd.type==='double'?`x = ${fmt(x)}`:`x${i+1} = ${fmt(x)}`;parts.push(`<circle cx="${px}" cy="${py}" r="6" fill="var(--root)" stroke="white" stroke-width="2"/>`);parts.push(`<text x="${px+9}" y="${py-10}" font-size="12" font-weight="800" fill="var(--root)" paint-order="stroke" stroke="white" stroke-width="4">${lab}</text>`)});$('equationGraph').innerHTML=parts.join('');$('lineLegend').textContent=`y = ${linear(m,n).replaceAll('{,}',',').replaceAll('\\','')}`}
+function render(){const d=read();if(!d){$('message').textContent='Vyplň všechny koeficienty.';return}if(Math.abs(d.a)<EPS){$('message').textContent='Koeficient a musí být nenulový, jinak rovnice není kvadratická.';return}$('message').textContent='';const B=clean(d.b/d.a),C=clean(d.c/d.a),m=clean(-B),n=clean(-C),rd=roots(d.a,d.b,d.c),monic=poly(1,B,C),line=linear(m,n);$('originalEquation').innerHTML=md(`${poly(d.a,d.b,d.c)}=0`);$('graphEquation').innerHTML=md(`x^2=${line}`);let body='';if(Math.abs(d.a-1)>=EPS){body+=step(`<strong>1.</strong> Nejprve vydělíme celou rovnici koeficientem ${mi(`a=${texNum(d.a)}`)}, aby před ${mi('x^2')} zůstala jednička:${md(`${poly(d.a,d.b,d.c)}=0`)}${md(`${monic}=0`)}`)}else{body+=step(`<strong>1.</strong> Začneme rovnicí:${md(`${monic}=0`)}`)}body+=step(`<strong>2.</strong> Člen ${mi('x^2')} necháme vlevo a ostatní členy převedeme na pravou stranu:${md(`x^2=${line}`)}`);body+=step(`<strong>3.</strong> Proč právě takto?<div class="method-note">Funkci ${mi('y=x^2')} umíme snadno nakreslit jako základní parabolu. Pravá strana ${mi(`y=${line}`)} je lineární funkce, kterou také umíme snadno sestrojit. Řešení rovnice jsou x-ové souřadnice průsečíků obou grafů.</div>${md(`y=x^2,\\qquad y=${line}`)}`);if(rd.type==='none'){body+=result(`Grafy se neprotínají, takže rovnice nemá v ${mi('\\mathbb{R}')} žádné řešení.`);$('solutionBox').innerHTML=md(`K=\\varnothing`)}else if(rd.type==='double'){const x=rd.roots[0];body+=result(`Grafy se dotýkají v jednom bodě. Z jeho x-ové souřadnice odečteme:${md(`x=${texNum(x)}`)}`);$('solutionBox').innerHTML=md(`K=\\{${texNum(x)}\\}`)}else{const[x1,x2]=rd.roots;body+=result(`Grafy se protínají ve dvou bodech. Z jejich x-ových souřadnic odečteme:${md(`x_1=${texNum(x1)},\\qquad x_2=${texNum(x2)}`)}`);$('solutionBox').innerHTML=md(`K=\\{${texNum(x1)};${texNum(x2)}\\}`)}$('stepsHost').innerHTML=details('Grafická metoda',body);draw(d.a,d.b,d.c);queueMath()}
+function generate(){const x1=Math.floor(Math.random()*9)-4,x2=Math.floor(Math.random()*9)-4;let r2=x2;if(r2===x1)r2=x1+(x1<4?1:-1);const a=[-3,-2,-1,1,2,3][Math.floor(Math.random()*6)],b=-a*(x1+r2),c=a*x1*r2;$('qa').value=a;$('qb').value=b;$('qc').value=c;render()}
+inputs.forEach(i=>i.addEventListener('input',render));$('generateBtn').addEventListener('click',generate);$('resetBtn').addEventListener('click',()=>{$('qa').value=1;$('qb').value=2;$('qc').value=-3;render()});render();
+})();
+</script>
+</body>
+</html>
