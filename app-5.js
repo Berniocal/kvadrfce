@@ -137,6 +137,106 @@
     return Math.abs(value)<EPS ? 1 : value;
   }
 
+  function gcdInt(a,b){
+    a=Math.abs(Math.round(a));
+    b=Math.abs(Math.round(b));
+    while(b){
+      const t=b;
+      b=a%b;
+      a=t;
+    }
+    return a||1;
+  }
+
+  function easyRoot(min=-6,max=6,nonzero=false,denominators=[1,2,3,4,5,8,10]){
+    const weighted=[];
+    denominators.forEach(d=>{
+      weighted.push(d);
+      if(d===1) weighted.push(1,1);
+    });
+
+    for(let guard=0;guard<200;guard++){
+      const den=randChoice(weighted);
+      const nMin=Math.ceil(min*den);
+      const nMax=Math.floor(max*den);
+      if(nMin>nMax) continue;
+      const num=randInt(nMin,nMax);
+      if(nonzero && num===0) continue;
+      if(gcdInt(num,den)!==1) continue;
+      return {value:num/den,num,den};
+    }
+
+    return {value:nonzero?1:0,num:nonzero?1:0,den:1};
+  }
+
+  function easyScaleForDen(den){
+    if(den===1 || den===2) return 1;
+    if(den===3) return 3;
+    if(den===4) return 2;
+    if(den===5) return 5;
+    if(den===8) return 4;
+    if(den===10) return 5;
+    return 1;
+  }
+
+  function easyTwoRootState(requireNonzero=false,requireAllTerms=false){
+    for(let guard=0;guard<200;guard++){
+      const fractional=easyRoot(-5,5,requireNonzero,[1,2,3,4,5,8,10]);
+      let integer=randInt(-5,5);
+      if(requireNonzero && integer===0) integer=randChoice([-5,-4,-3,-2,-1,1,2,3,4,5]);
+      if(Math.abs(fractional.value-integer)<.25) continue;
+      if(requireAllTerms && Math.abs(fractional.value+integer)<EPS) continue;
+
+      const sign=randChoice([-1,1]);
+      const a=sign*easyScaleForDen(fractional.den);
+      const x1=fractional.value;
+      const x2=integer;
+      const candidate={
+        a,
+        b:-a*(x1+x2),
+        c:a*x1*x2
+      };
+
+      if(requireAllTerms && !generalHasAllTerms(candidate)) continue;
+      return candidate;
+    }
+
+    return {a:1,b:-3,c:2};
+  }
+
+  function easyDoubleRootState(requireNonzero=false,requireAllTerms=false){
+    // Pro dvojnásobný kořen volíme jen takové jednoduché zlomky,
+    // aby koeficienty zůstaly malé a přesné i při zobrazení na 3 desetinná místa.
+    for(let guard=0;guard<200;guard++){
+      const root=easyRoot(-5,5,requireNonzero,[1,2,4,5,10]);
+      const sign=randChoice([-1,1]);
+      const a=sign*easyScaleForDen(root.den);
+      const x0=root.value;
+      const candidate={
+        a,
+        b:-2*a*x0,
+        c:a*x0*x0
+      };
+
+      if(requireAllTerms && !generalHasAllTerms(candidate)) continue;
+      return candidate;
+    }
+
+    return {a:1,b:-2,c:1};
+  }
+
+  function easyNoRootState(){
+    const a=nonzeroA('easy');
+    const p=randomNonzeroVal('easy',-4,4);
+    const qMagnitude=randInt(1,6);
+    const q=a>0?qMagnitude:-qMagnitude;
+    return {
+      a,
+      b:-2*a*p,
+      c:a*p*p+q
+    };
+  }
+
   function generalHasAllTerms(candidate){
     return Math.abs(candidate.a)>EPS
       && Math.abs(candidate.b)>EPS
@@ -151,12 +251,50 @@
 
     if(mode!=='power') rootChoiceByMode[mode]=requestedRootType;
 
-    // Každý aktivní tvar má vlastní pravidla:
-    // Obecný: vždy musí být přítomny všechny členy ax² + bx + c, tedy a,b,c ≠ 0.
-    // Vrcholový: generujeme přímo a,p,q.
-    // Součinový: vždy dvě závorky a reálné kořeny.
-    // Mocninový: vždy a(x+b)².
+    // V lehké obtížnosti mají všechny reálné průsečíky s osou x
+    // jen celá čísla nebo jednoduché zlomky se jmenovateli 2,3,4,5,8,10.
+    if(difficulty==='easy'){
+      let type=requestedRootType;
 
+      if(mode==='power'){
+        type='double';
+      } else if(mode==='factored'){
+        if(type==='random') type=randChoice(['two','two','double']);
+        if(type==='none') type='two';
+      } else if(type==='random'){
+        type=randChoice(['two','two','double','none']);
+      }
+
+      if(mode==='general'){
+        if(type==='two') state=easyTwoRootState(true,true);
+        else if(type==='double') state=easyDoubleRootState(true,true);
+        else state=easyNoRootState();
+
+      } else if(mode==='power'){
+        state=easyDoubleRootState(false,false);
+
+      } else if(type==='two'){
+        state=easyTwoRootState(mode==='factored',false);
+
+      } else if(type==='double'){
+        state=easyDoubleRootState(mode==='factored',false);
+
+      } else {
+        state=easyNoRootState();
+      }
+
+      state={
+        a:clean(state.a),
+        b:clean(state.b),
+        c:clean(state.c)
+      };
+
+      zoomFactor=1;
+      renderAll();
+      return;
+    }
+
+    // Střední obtížnost ponechává původní volnější generování.
     if(mode==='general'){
       let candidate=null;
       let guard=0;
@@ -176,7 +314,7 @@
           let x2=randomVal(difficulty,-4,6);
 
           if(Math.abs(x1-x2)<.5){
-            x2=x1+(difficulty==='easy'?randChoice([1,2,3]):1.5);
+            x2=x1+1.5;
           }
 
           candidate={
@@ -186,7 +324,6 @@
           };
 
         } else if(requestedRootType==='double'){
-          // x0 nesmí být 0, jinak by c=0.
           const x0=randomNonzeroVal(difficulty,-5,5);
           candidate={
             a,
@@ -195,11 +332,8 @@
           };
 
         } else {
-          // D < 0 a zároveň b,c ≠ 0.
           const p=randomNonzeroVal(difficulty,-4,4);
-          const qMagnitude=difficulty==='easy'
-            ? randInt(1,6)
-            : Math.round((1+Math.random()*5)*2)/2;
+          const qMagnitude=Math.round((1+Math.random()*5)*2)/2;
           const q=a>0?qMagnitude:-qMagnitude;
 
           candidate={
@@ -210,11 +344,7 @@
         }
 
         if(guard>200){
-          candidate={
-            a,
-            b:2,
-            c:a>0?3:-3
-          };
+          candidate={a,b:2,c:a>0?3:-3};
           break;
         }
       }
@@ -224,19 +354,11 @@
     } else if(mode==='vertex' && requestedRootType==='random'){
       const p=randomVal(difficulty,-5,5);
       const q=randomVal(difficulty,-7,7);
-      state={
-        a,
-        b:-2*a*p,
-        c:a*p*p+q
-      };
+      state={a,b:-2*a*p,c:a*p*p+q};
 
     } else if(mode==='power'){
       const insideB=randomVal(difficulty,-5,5);
-      state={
-        a,
-        b:2*a*insideB,
-        c:a*insideB*insideB
-      };
+      state={a,b:2*a*insideB,c:a*insideB*insideB};
 
     } else {
       let type;
@@ -261,51 +383,30 @@
           : randomVal(difficulty,-4,6);
 
         if(Math.abs(x1-x2)<.5){
-          const shift=difficulty==='easy'?randChoice([1,2,3]):1.5;
-          x2=x1+shift;
-
-          // V součinovém tvaru nechceme ani po posunu kořen 0.
-          if(mode==='factored' && Math.abs(x2)<EPS){
-            x2=x1-shift;
-          }
+          x2=x1+1.5;
+          if(mode==='factored' && Math.abs(x2)<EPS) x2=x1-1.5;
         }
 
-        // Poslední pojistka: v součinovém tvaru musí být v obou závorkách číslo ≠ 0.
         if(mode==='factored'){
           if(Math.abs(x1)<EPS) x1=1;
           if(Math.abs(x2)<EPS) x2=-1;
-          if(Math.abs(x1-x2)<EPS) x2=x1+(difficulty==='easy'?1:0.5);
+          if(Math.abs(x1-x2)<EPS) x2=x1+.5;
         }
 
-        state={
-          a,
-          b:-a*(x1+x2),
-          c:a*x1*x2
-        };
+        state={a,b:-a*(x1+x2),c:a*x1*x2};
 
       } else if(type==='double'){
         const x0 = mode==='factored'
           ? randomNonzeroVal(difficulty,-5,5)
           : randomVal(difficulty,-5,5);
 
-        state={
-          a,
-          b:-2*a*x0,
-          c:a*x0*x0
-        };
+        state={a,b:-2*a*x0,c:a*x0*x0};
 
       } else {
         const p=randomVal(difficulty,-4,4);
-        const qMagnitude=difficulty==='easy'
-          ? randInt(1,6)
-          : Math.round((1+Math.random()*5)*2)/2;
+        const qMagnitude=Math.round((1+Math.random()*5)*2)/2;
         const q=a>0?qMagnitude:-qMagnitude;
-
-        state={
-          a,
-          b:-2*a*p,
-          c:a*p*p+q
-        };
+        state={a,b:-2*a*p,c:a*p*p+q};
       }
     }
 
